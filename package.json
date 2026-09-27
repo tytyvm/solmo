@@ -1,0 +1,18 @@
+{
+  "name": "solana-momentum-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/cli.js run",
+    "once": "node src/cli.js once",
+    "status": "node src/cli.js status",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.99.0",
+    "bs58": "^6.0.0",
+    "ws": "^8.18.3"
+  },
+  "engines": { "node": ">=20" }
+}
