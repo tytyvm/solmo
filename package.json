@@ -1,6 +1,6 @@
 {
   "name": "solana-momentum-bot",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,5 +14,10 @@
     "bs58": "^6.0.0",
     "ws": "^8.18.3"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1"
+  }
 }

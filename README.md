@@ -1,17 +1,23 @@
-# Solana momentum bot
+# Solana momentum bot + dashboard
 
-Automated Raydium CPMM trade monitoring, momentum screening, Jupiter quote-based paper execution, and opt-in live execution. Market signals come from confirmed Solana transactions through a Helius WebSocket. No DEX Screener dependency.
+Automated Raydium CPMM trade monitoring, momentum screening, Jupiter quote-based paper execution, opt-in live execution, and a password-protected web dashboard. Market signals come from confirmed Solana transactions through a Helius WebSocket. No DEX Screener dependency.
 
 ## Setup
 
-Requires Node 20+, a Helius API key with `transactionSubscribe` access on mainnet, and a Jupiter API key. Copy `.env.example` to `.env`, add keys, then run:
+Requires Node 20+, a Helius API key with `transactionSubscribe` access on mainnet, and a Jupiter API key. Copy `.env.example` to `.env`, add keys and a unique dashboard password of at least 16 characters, then run:
 
 ```bash
 npm install
 npm start
 ```
 
-The default mode is **paper**. `npm run status` prints current positions and cash; `data/paper-events.jsonl` contains swaps, signals and fills. `WATCH_TOKENS` accepts comma-separated mint addresses to restrict *local processing*; the stream always observes Raydium CPMM transactions, so a watchlist does not reduce provider bandwidth. The program stream can consume considerable provider credits. The stream must accumulate ten uninterrupted minutes of events before entry is possible. After reconnect, signal history resets and builds again. Entries pause on stale or disconnected streams; existing positions still receive live exit quotes.
+Open `http://localhost:3000` and sign in with `DASHBOARD_PASSWORD`. The dashboard shows paper balance, realized P&L, positions, token signals, stream health, and recent events. You can pause new entries; this does not stop exit checks. Paper strategy settings can be tuned from the Strategy tab and persist on the data volume. Live mode remains controlled exclusively through environment variables, and browser edits are locked in live mode.
+
+### Railway deployment
+
+Push this updated project into the **same GitHub repository** connected to your existing Railway bot service. Keep `npm start` as the start command and the volume at `/data`. Set service variables `HELIUS_API_KEY`, `JUPITER_API_KEY`, `MODE=paper`, `DATA_DIR=/data`, and `DASHBOARD_PASSWORD` (at least 16 characters). Apply the change and deploy. In the service **Settings → Networking**, choose **Generate Domain**. Open that URL; the password prompt appears before bot data is served. Railway sets `PORT` for the web server, and the bot runs in the same process. Keep one replica because the bot and volume state should have one writer.
+
+The default mode is **paper**. `npm run status` prints current positions and cash; `data/paper-events.jsonl` contains signals, fills and operational events, while `data/paper-swaps.jsonl` records decoded on-chain swaps. `WATCH_TOKENS` accepts comma-separated mint addresses to restrict *local processing*; the stream always observes Raydium CPMM transactions, so a watchlist does not reduce provider bandwidth. The program stream can consume considerable provider credits. The stream must accumulate ten uninterrupted minutes of events before entry is possible. After reconnect, signal history resets and builds again. Entries pause on stale or disconnected streams; existing positions still receive live exit quotes.
 
 ## Strategy and accounting
 
@@ -34,4 +40,4 @@ npm run status
 npm start
 ```
 
-`once` is a setup smoke check; it connects and checks the quote service, then exits. It cannot accumulate the ten-minute signal window.
+`once` is a setup smoke check; it connects and checks the quote service, then exits without starting the dashboard. It cannot accumulate the ten-minute signal window.

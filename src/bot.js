@@ -15,6 +15,13 @@ export class Bot {
     this.jupiter = new Jupiter(cfg.apiKey, cfg.secret);
     this.lastSolQuote = 0;
     this.lastAttempt = new Map();
+    this.lastCandidates = [];
+    this.lastTickAt = 0;
+    this.lastTickError = null;
+    if (cfg.mode === 'paper') {
+      const saved = this.store.settings();
+      if (saved) Object.assign(this.cfg, saved);
+    }
   }
   async tick() {
     const c = this.cfg, s = this.store, now = Date.now();
@@ -32,6 +39,7 @@ export class Bot {
     if (!fresh || s.state.paused || s.state.pending || s.state.dayPnlSol <= -c.maxDailyLossSol) return;
     if (Object.keys(s.state.positions).length >= c.maxPositions) return;
     const candidates = (await this.market.candidates(now)).map(p => ({ p, signal: evaluate(p, c, now) }));
+    this.lastCandidates = candidates.sort((a, b) => b.p.recentUsd - a.p.recentUsd).slice(0, 100);
     for (const { p, signal } of candidates) {
       if (signal.eligible || p.recentUsd >= c.minVolume) s.snapshot(p, signal);
       if (!signal.eligible || s.state.positions[p.mint] || now - (this.lastAttempt.get(p.mint) || 0) < 30 * 60000) continue;
@@ -97,8 +105,10 @@ export class Bot {
   }
   async run(once = false) {
     do {
-      try { await this.tick(); if (!this.store.state.paused) this.store.state.lastError = null; this.store.save(); }
-      catch (e) { this.store.state.lastError = e.message; this.store.save(); this.store.log('tick_error', { message: e.message }); }
+      try { await this.tick(); this.lastTickAt = Date.now(); this.lastTickError = null;
+        if (!this.store.state.paused) this.store.state.lastError = null; this.store.save(); }
+      catch (e) { this.lastTickAt = Date.now(); this.lastTickError = e.message;
+        this.store.state.lastError = e.message; this.store.save(); this.store.log('tick_error', { message: e.message }); }
       if (once) { this.market.stream?.close(); return; }
       await sleep(this.cfg.pollMs);
     } while (true);
